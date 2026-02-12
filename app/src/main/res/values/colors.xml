@@ -2,4 +2,7 @@
 <resources>
     <color name="ic_launcher_background">#FFFFFF</color>
     <color name="ic_launcher_foreground">#00695C</color>
+
+    <!-- App launch background (light mode) -->
+    <color name="launch_background">#FFFFFF</color>
 </resources>

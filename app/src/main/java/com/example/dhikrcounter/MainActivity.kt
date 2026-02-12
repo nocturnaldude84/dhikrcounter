@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
@@ -26,7 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +38,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import android.content.Context
+import android.os.VibrationEffect
+import android.os.Vibrator
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.layout.Row
+import com.example.dhikrcounter.ui.theme.DhikrCounterTheme
+
+
+fun vibrate(context: Context) {
+    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    vibrator.vibrate(
+        VibrationEffect.createOneShot(
+            40,
+            VibrationEffect.DEFAULT_AMPLITUDE
+        )
+    )
+}
 
 class MainActivity : ComponentActivity() {
     private val viewModel: DhikrCounterViewModel by viewModels()
@@ -46,11 +63,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = Color.White
-            ) {
-                DhikrCounterScreen(viewModel = viewModel)
+            DhikrCounterTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    DhikrCounterScreen(viewModel = viewModel)
+                }
             }
         }
     }
@@ -70,17 +89,44 @@ class DhikrCounterViewModel(
         "أَسْتَغْفِرُ اللهَ الْعَظِيْمَ الَّذِيْ لَا إِلٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّوْمُ ، وَأَتُوْبُ إِلَيْهِ"
     )
 
+    enum class CycleMode(val max: Int) {
+        MODE_33(33),
+        MODE_99(99)
+    }
+
+    var cycleMode by mutableStateOf(
+        savedStateHandle["cycle_mode"] ?: CycleMode.MODE_33
+    )
+        private set
+
+
+    fun incrementCounter() {
+        if (counter < cycleMode.max) {
+            counter += 1
+            savedStateHandle[COUNTER_KEY] = counter
+        } else {
+            counter = 0
+            savedStateHandle[COUNTER_KEY] = 0
+        }
+    }
+
+
     var counter by mutableIntStateOf(savedStateHandle[COUNTER_KEY] ?: 0)
         private set
 
     var selectedDhikr by mutableStateOf(savedStateHandle[SELECTED_DHIKR_KEY] ?: dhikrList.first())
         private set
 
-    fun incrementCounter() {
-        if (counter < MAX_COUNTER_VALUE) {
-            counter += 1
-            savedStateHandle[COUNTER_KEY] = counter
-        }
+    fun changeCycleMode(mode: CycleMode) {
+        cycleMode = mode
+        reset()
+    }
+
+
+
+    fun reset() {
+        counter = 0
+        savedStateHandle[COUNTER_KEY] = 0
     }
 
     fun selectDhikr(dhikr: String) {
@@ -91,7 +137,6 @@ class DhikrCounterViewModel(
     companion object {
         private const val COUNTER_KEY = "counter"
         private const val SELECTED_DHIKR_KEY = "selected_dhikr"
-        private const val MAX_COUNTER_VALUE = 999
     }
 }
 
@@ -103,7 +148,7 @@ fun DhikrCounterScreen(viewModel: DhikrCounterViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 20.dp, vertical = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
@@ -164,6 +209,28 @@ fun DhikrCounterScreen(viewModel: DhikrCounterViewModel) {
 
         Spacer(modifier = Modifier.weight(1f))
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedButton(
+                onClick = { viewModel.changeCycleMode(DhikrCounterViewModel.CycleMode.MODE_33) },
+                enabled = viewModel.cycleMode != DhikrCounterViewModel.CycleMode.MODE_33
+            ) {
+                Text("33")
+            }
+
+            OutlinedButton(
+                onClick = { viewModel.changeCycleMode(DhikrCounterViewModel.CycleMode.MODE_99) },
+                enabled = viewModel.cycleMode != DhikrCounterViewModel.CycleMode.MODE_99
+            ) {
+                Text("99")
+            }
+        }
+
+
         Text(
             text = viewModel.counter.toString(),
             fontSize = 96.sp,
@@ -174,8 +241,13 @@ fun DhikrCounterScreen(viewModel: DhikrCounterViewModel) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        val context = LocalContext.current
+
         Button(
-            onClick = { viewModel.incrementCounter() },
+            onClick = {
+                viewModel.incrementCounter()
+                vibrate(context)
+            },
             modifier = Modifier
                 .height(52.dp)
                 .padding(horizontal = 24.dp)
@@ -184,5 +256,11 @@ fun DhikrCounterScreen(viewModel: DhikrCounterViewModel) {
         }
 
         Spacer(modifier = Modifier.weight(1f))
+
+        OutlinedButton(
+            onClick = { viewModel.reset() }
+        ) {
+            Text("Reset")
+        }
     }
 }
