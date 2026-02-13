@@ -45,6 +45,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.layout.Row
 import com.example.dhikrcounter.ui.theme.DhikrCounterTheme
+import com.example.dhikrcounter.ui.theme.NotoArabic
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.material3.Divider
 
 
 fun vibrate(context: Context) {
@@ -154,8 +159,22 @@ fun DhikrCounterScreen(viewModel: DhikrCounterViewModel) {
         verticalArrangement = Arrangement.Top
     ) {
         Text(
+            text = "بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            style = TextStyle(
+                textDirection = TextDirection.ContentOrRtl,
+                fontFamily = NotoArabic
+            )
+        )
+
+        Text(
             text = "Choose a Dhikr",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -170,42 +189,60 @@ fun DhikrCounterScreen(viewModel: DhikrCounterViewModel) {
                 value = viewModel.selectedDhikr,
                 onValueChange = {},
                 readOnly = true,
-                textStyle = TextStyle(textDirection = TextDirection.ContentOrRtl),
+                textStyle = TextStyle(
+                    textDirection = TextDirection.ContentOrRtl,
+                    fontSize = 22.sp,
+                    lineHeight = 30.sp
+                ),
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = menuExpanded) },
                 modifier = Modifier
                     .menuAnchor()
                     .fillMaxWidth()
             )
 
-            ExposedDropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { menuExpanded = false }
+            CompositionLocalProvider(
+                LocalLayoutDirection provides LayoutDirection.Rtl
             ) {
-                viewModel.dhikrList.forEach { dhikr ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = dhikr,
-                                style = TextStyle(textDirection = TextDirection.ContentOrRtl)
+                ExposedDropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    viewModel.dhikrList.forEachIndexed { index, dhikr ->
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = dhikr,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.End,
+                                    style = TextStyle(
+                                        textDirection = TextDirection.ContentOrRtl,
+                                        fontSize = 22.sp,
+                                        lineHeight = 30.sp
+                                    )
+                                )
+                            },
+                            onClick = {
+                                viewModel.selectDhikr(dhikr)
+                                menuExpanded = false
+                            }
+                        )
+
+                        // faint separator, except after last item
+                        if (index < viewModel.dhikrList.lastIndex) {
+                            Divider(
+                                modifier = Modifier
+                                    .padding(horizontal = 12.dp),
+                                thickness = 1.dp,
+                                color = Color.White.copy(alpha = 0.15f)
                             )
-                        },
-                        onClick = {
-                            viewModel.selectDhikr(dhikr)
-                            menuExpanded = false
                         }
-                    )
+                    }
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
-
-        Text(
-            text = viewModel.selectedDhikr,
-            style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.ContentOrRtl),
-            textAlign = TextAlign.End,
-            modifier = Modifier.fillMaxWidth()
-        )
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -256,6 +293,22 @@ fun DhikrCounterScreen(viewModel: DhikrCounterViewModel) {
         }
 
         Spacer(modifier = Modifier.weight(1f))
+
+        Text(
+            text = "بَارَكَ اللهُ لَنَا وَلِعَائِلَتِنَا فِي رَحْمَتِهِ وَبَرَكَتِهِ",
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            style = TextStyle(
+                textDirection = TextDirection.ContentOrRtl,
+                fontFamily = NotoArabic
+            )
+        )
+
+        Spacer(modifier = Modifier.weight(0.6f))
 
         OutlinedButton(
             onClick = { viewModel.reset() }
